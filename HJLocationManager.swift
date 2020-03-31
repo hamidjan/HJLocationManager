@@ -29,9 +29,10 @@ import CoreLocation
 import MapKit
 
 
-typealias LMReverseGeocodeCompletionHandler = ((_ reverseGecodeInfo:NSDictionary?,_ placemark:CLPlacemark?, _ error:String?)->Void)?
-typealias LMGeocodeCompletionHandler = ((_ gecodeInfo:NSDictionary?,_ placemark:CLPlacemark?, _ error:String?)->Void)?
-typealias LMLocationCompletionHandler = ((_ latitude:Double, _ longitude:Double, _ status:String, _ verboseMessage:String, _ error:String?)->())?
+public typealias LMReverseGeocodeCompletionHandler = ((_ reverseGecodeInfo:NSDictionary?,_ placemark:CLPlacemark?, _ error:String?)->Void)?
+public typealias LMGeocodeCompletionHandler = ((_ gecodeInfo:NSDictionary?,_ placemark:CLPlacemark?, _ error:String?)->Void)?
+public typealias LMLocationCompletionHandler = ((_ latitude:Double, _ longitude:Double, _ status:String, _ verboseMessage:String, _ error:String?)->())?
+public typealias LMHeadingCompletionHandler = ((_ heading:Double, _ error:String?)->Void)?
 
 // Todo: Keep completion handler differerent for all services, otherwise only one will work
 enum GeoCodingType{
@@ -44,8 +45,9 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     
     /* Private variables */
     fileprivate var completionHandler:LMLocationCompletionHandler?
+    fileprivate var headingCompletionHandler:LMHeadingCompletionHandler?
     
-    fileprivate var reverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler?
+    public var reverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler?
     fileprivate var geocodingCompletionHandler:LMGeocodeCompletionHandler?
     
     fileprivate var locationStatus : NSString = "Calibrating"// to pass in handler
@@ -78,20 +80,14 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     var keepLastKnownLocation:Bool = true
     var hasLastKnownLocation:Bool = true
     
-    var autoUpdate:Bool = false
+    public var autoUpdate:Bool = false
     
-    var showVerboseMessage = false
+    public var showVerboseMessage = false
     
     var isRunning = false
     
     
-    public var sharedInstance : HJLocationManager {
-        struct Static {
-            static let instance : HJLocationManager = HJLocationManager()
-        }
-        return Static.instance
-    }
-    
+    public static let sharedInstance = HJLocationManager()
     
     fileprivate override init(){
         
@@ -125,20 +121,24 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         
     }
     
-    func startUpdatingLocationWithCompletionHandler(_ completionHandler:((_ latitude:Double, _ longitude:Double, _ status:String, _ verboseMessage:String, _ error:String?)->())? = nil){
+    public func startUpdatingLocationWithCompletionHandler(_ completionHandler:((_ latitude:Double, _ longitude:Double, _ status:String, _ verboseMessage:String, _ error:String?)->())? = nil){
         
         self.completionHandler = completionHandler
         
         initLocationManager()
     }
     
+    public func startUpdatingHeadingWithCompletionHandler(headingCompletionHandler:LMHeadingCompletionHandler) {
+        self.headingCompletionHandler = headingCompletionHandler
+        locationManager.startUpdatingHeading()
+    }
     
-    func startUpdatingLocation(){
+    public func startUpdatingLocation(){
         
         initLocationManager()
     }
     
-    func stopUpdatingLocation(){
+    public func stopUpdatingLocation(){
         
         if(autoUpdate){
             locationManager.stopUpdatingLocation()
@@ -176,8 +176,6 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         }
         
         startLocationManger()
-        
-        
     }
     
     fileprivate func startLocationManger(){
@@ -209,7 +207,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     }
     
     
-    internal func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         
         stopLocationManger()
         
@@ -229,7 +227,22 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         }
     }
     
-    internal func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    public func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        var magneticHeading = newHeading.magneticHeading
+        
+        if (magneticHeading > 180) {
+            magneticHeading = 360 - magneticHeading
+        }
+        else {
+            magneticHeading = 0 - magneticHeading
+        }
+        
+        if (self.headingCompletionHandler != nil) {
+            self.headingCompletionHandler??(magneticHeading, nil)
+        }
+    }
+    
+    public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         
         let arrayOfLocation = locations as NSArray
         let location = arrayOfLocation.lastObject as! CLLocation
@@ -246,7 +259,6 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         if showVerboseMessage {verbose = verboseMessage}
         
         if(completionHandler != nil){
-            
             completionHandler??(latitude, longitude, locationStatus as String,verbose, nil)
         }
         
@@ -269,7 +281,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     }
     
     
-    internal func locationManager(_ manager: CLLocationManager,
+    public func locationManager(_ manager: CLLocationManager,
         didChangeAuthorization status: CLAuthorizationStatus) {
             var hasAuthorised = false
             let verboseKey = status
@@ -318,7 +330,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     }
     
     
-    func reverseGeocodeLocationWithLatLon(latitude:Double, longitude: Double,onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
+    public func reverseGeocodeLocationWithLatLon(latitude:Double, longitude: Double,onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
         
         let location:CLLocation = CLLocation(latitude:latitude, longitude: longitude)
         
@@ -326,7 +338,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         
     }
     
-    func reverseGeocodeLocationWithCoordinates(_ coord:CLLocation, onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
+    public func reverseGeocodeLocationWithCoordinates(_ coord:CLLocation, onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
         
         self.reverseGeocodingCompletionHandler = onReverseGeocodingCompletionHandler
         
@@ -364,7 +376,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     
     
     
-    func geocodeAddressString(address:NSString, onGeocodingCompletionHandler:LMGeocodeCompletionHandler){
+    public func geocodeAddressString(address:NSString, onGeocodingCompletionHandler:LMGeocodeCompletionHandler){
         
         self.geocodingCompletionHandler = onGeocodingCompletionHandler
         
@@ -405,7 +417,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     }
     
     
-    func geocodeUsingGoogleAddressString(address:NSString, onGeocodingCompletionHandler:LMGeocodeCompletionHandler){
+    public func geocodeUsingGoogleAddressString(address:NSString, onGeocodingCompletionHandler:LMGeocodeCompletionHandler){
         
         self.geocodingCompletionHandler = onGeocodingCompletionHandler
         
@@ -423,7 +435,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         
     }
     
-    func reverseGeocodeLocationUsingGoogleWithLatLon(latitude:Double, longitude: Double,onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
+    public func reverseGeocodeLocationUsingGoogleWithLatLon(latitude:Double, longitude: Double,onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
         
         self.reverseGeocodingCompletionHandler = onReverseGeocodingCompletionHandler
         
@@ -431,7 +443,7 @@ public class HJLocationManager: NSObject,CLLocationManagerDelegate {
         
     }
     
-    func reverseGeocodeLocationUsingGoogleWithCoordinates(_ coord:CLLocation, onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
+    public func reverseGeocodeLocationUsingGoogleWithCoordinates(_ coord:CLLocation, onReverseGeocodingCompletionHandler:LMReverseGeocodeCompletionHandler){
         
         reverseGeocodeLocationUsingGoogleWithLatLon(latitude: coord.coordinate.latitude, longitude: coord.coordinate.longitude, onReverseGeocodingCompletionHandler: onReverseGeocodingCompletionHandler)
         
