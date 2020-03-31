@@ -1,8 +1,8 @@
 //
-//  LocationManager.swift
+//  HJLocationManager.swift
 //
 //
-//  Created by Jimmy Jose on 14/08/14.
+//  Created by Hamid Jan on 31/03/2020.
 //
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,7 +40,7 @@ enum GeoCodingType{
     case reverseGeocoding
 }
 
-class LocationManager: NSObject,CLLocationManagerDelegate {
+class HJLocationManager: NSObject,CLLocationManagerDelegate {
     
     /* Private variables */
     fileprivate var completionHandler:LMLocationCompletionHandler?
@@ -85,9 +85,9 @@ class LocationManager: NSObject,CLLocationManagerDelegate {
     var isRunning = false
     
     
-    class var sharedInstance : LocationManager {
+    class var sharedInstance : HJLocationManager {
         struct Static {
-            static let instance : LocationManager = LocationManager()
+            static let instance : HJLocationManager = HJLocationManager()
         }
         return Static.instance
     }
