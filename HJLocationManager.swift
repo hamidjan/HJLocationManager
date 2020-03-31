@@ -40,7 +40,7 @@ enum GeoCodingType{
     case reverseGeocoding
 }
 
-class HJLocationManager: NSObject,CLLocationManagerDelegate {
+public class HJLocationManager: NSObject,CLLocationManagerDelegate {
     
     /* Private variables */
     fileprivate var completionHandler:LMLocationCompletionHandler?
