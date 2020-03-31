@@ -85,7 +85,7 @@ class HJLocationManager: NSObject,CLLocationManagerDelegate {
     var isRunning = false
     
     
-    class var sharedInstance : HJLocationManager {
+    public var sharedInstance : HJLocationManager {
         struct Static {
             static let instance : HJLocationManager = HJLocationManager()
         }
